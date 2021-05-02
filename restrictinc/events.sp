@@ -46,6 +46,9 @@ public void OnClientDisconnect(int client)
 
 public Action OnWeaponCanUse(int client, int weapon)
 {
+
+	int flags = GetUserFlagBits(client);
+
 	if(!IsClientInGame(client))
 		return Plugin_Continue;
 	
@@ -71,7 +74,7 @@ public Action OnWeaponCanUse(int client, int weapon)
 	}
 	#endif
 	
-	if(Restrict_CanPickupWeapon(client, iTeam, id) || !IsGoingToPickup(client, id))
+	if(Restrict_CanPickupWeapon(client, iTeam, id) || !IsGoingToPickup(client, id) || flags & ADMFLAG_RESERVATION)
 		return Plugin_Continue;
 	
 	WeaponType type = CSWeapons_GetWeaponType(id);
@@ -203,6 +206,8 @@ public Action EventRoundEnd(Handle event, const char [] name, bool dontBroadcast
 
 public Action CS_OnBuyCommand(int client, const char [] szWeapon)
 {
+	int flags = GetUserFlagBits(client);
+
 	if(!IsClientInGame(client) || !IsPlayerAlive(client) || GetEntProp(client, Prop_Send, "m_bInBuyZone") == 0)
 		return Plugin_Continue;
 	
@@ -237,8 +242,10 @@ public Action CS_OnBuyCommand(int client, const char [] szWeapon)
 	
 	CanBuyResult result = Restrict_CanBuyWeapon(client, iTeam, id);
 	
-	if(result == CanBuy_Block || result == CanBuy_BlockDontDisplay)
-	{
+	if (flags & ADMFLAG_RESERVATION) {
+		return Plugin_Continue;
+	}
+	else if(result == CanBuy_Block || result == CanBuy_BlockDontDisplay) {
 		char szWeaponName[WEAPONARRAYSIZE];
 		CSWeapons_GetAlias(id, szWeaponName, sizeof(szWeaponName), true);
 		
